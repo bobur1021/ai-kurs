@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroAI Pro - Intelligent Flood & Rain Control Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; background-color: rgba(225, 29, 72, 0.15); }
+            50% { opacity: 0.6; background-color: rgba(225, 29, 72, 0.35); }
+        }
+        .siren-active {
+            animation: pulse-red 1.2s infinite ease-in-out;
+            border-color: #f43f5e !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Header / Navigation -->
+    <header id="main-header" class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-sm shadow-sky-500/20">
+                    <i class="fa-solid fa-cloud-showers-heavy text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-extrabold text-lg tracking-tight text-white">HydroAI</span>
+                        <span class="bg-sky-500/10 text-sky-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-sky-500/20 uppercase tracking-widest">PRO v2.4</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Intellektual Yomg'ir va Toshqin Nazorati</p>
+                </div>
+            </div>
+
+            <!-- Live Indicators & Actions -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                
+                <!-- Live Status Badge -->
+                <div id="status-badge" class="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                    <span class="relative flex h-2 w-2">
+                        <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span id="status-text">Tizim Faol</span>
+                </div>
+
+                <!-- Simulation Toggle Button -->
+                <button id="sim-toggle-btn" onclick="toggleSimulation()" class="hidden md:flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium transition">
+                    <i class="fa-solid fa-play text-xs text-sky-400"></i>
+                    <span id="sim-btn-text">Simulyatsiya: Faol</span>
+                </button>
+
+                <!-- Live Clock -->
+                <div class="font-mono text-xs text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 hidden sm:block">
+                    <i class="fa-regular fa-clock mr-1 text-slate-500"></i>
+                    <span id="live-clock">00:00:00</span>
+                </div>
+
+                <!-- SOS Emergency Test Button -->
+                <button onclick="triggerEmergencyMode()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-lg shadow-rose-600/20 border border-rose-500 transition flex items-center space-x-1.5 active:scale-95">
+                    <i class="fa-solid fa-triangle-exclamation text-sm animate-pulse"></i>
+                    <span class="hidden sm:inline">SOS ALARM</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow w-full">
+
+        <!-- Banner for Emergency Mode Notice (Hidden by default) -->
+        <div id="emergency-banner" class="hidden bg-rose-500/10 border border-rose-500/40 rounded-2xl p-4 text-rose-300 flex items-center justify-between animate-fade-in shadow-xl shadow-rose-950/40">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                    <i class="fa-solid fa-bell text-xl animate-bounce"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm text-rose-200">FAVQULODDA REJIM FAOLLASHTIRILDI!</h4>
+                    <p class="text-xs text-rose-300/80">Kritik darajadagi yog'ingarchilik aniqlandi. Shlyuzlar 100% ga ochildi hamda qutqaruv xizmatlariga tezkor xabar yuborildi.</p>
+                </div>
+            </div>
+            <button onclick="resetToNormalMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-600 transition shrink-0 ml-3">
+                Tizimni Tiklash
+            </button>
+        </div>
+
+        <!-- SECTION 1: AI Risk Analysis & Sensor Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- AI Hazard Evaluation Card -->
+            <div id="ai-risk-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 shadow-sm">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">SI Xavf Tahlili</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400" id="risk-dot"></span>
+                    </div>
+                    <div id="ai-risk-title" class="text-2xl font-black text-emerald-400 tracking-tight transition-colors">
+                        XAVFSIZ
+                    </div>
+                    <p id="ai-risk-desc" class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        Yog'ingarchilik me'yorida. Toshqin xavfi ehtimoli: <span id="risk-probability" class="font-semibold text-slate-200">3%</span>.
+                    </p>
+                </div>
+                
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">Tizim Rejimi:</span>
+                    <span id="mode-badge-display" class="font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">Avto-boshqaruv</span>
+                </div>
+            </div>
+
+            <!-- Sensor 1: Rain Intensity -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-400">Yog'ingarchilik Qudrati</span>
+                    <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                        <i class="fa-solid fa-cloud-rain text-sm"></i>
+                    </div>
+                </div>
+                <div class="my-3">
+                    <div class="text-3xl font-extrabold text-white tracking-tight">
+                        <span id="val-rain">14.2</span> <span class="text-sm font-medium text-slate-400">mm/soat</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-1 flex justify-between">
+                        <span>Norma: 0 - 30 mm/s</span>
+                        <span id="rain-status" class="text-emerald-400 font-semibold">Me'yorida</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="bar-rain" class="bg-sky-500 h-full transition-all duration-500 rounded-full" style="width: 25%"></div>
+                </div>
+            </div>
+
+            <!-- Sensor 2: Soil Moisture -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-400">Tuproq Namligi</span>
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-droplet text-sm"></i>
+                    </div>
+                </div>
+                <div class="my-3">
+                    <div class="text-3xl font-extrabold text-white tracking-tight">
+                        <span id="val-soil">48</span> <span class="text-sm font-medium text-slate-400">%</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-1 flex justify-between">
+                        <span>Toyinganlik: <span id="soil-status" class="text-cyan-400 font-semibold">O'rta</span></span>
+                        <span>Maks: 100%</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="bar-soil" class="bg-cyan-500 h-full transition-all duration-500 rounded-full" style="width: 48%"></div>
+                </div>
+            </div>
+
+            <!-- Sensor 3: Water Level -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-400">Suv Sathi (Kanal/To'g'on)</span>
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <i class="fa-solid fa-water text-sm"></i>
+                    </div>
+                </div>
+                <div class="my-3">
+                    <div class="text-3xl font-extrabold text-white tracking-tight">
+                        <span id="val-water">1.65</span> <span class="text-sm font-medium text-slate-400">metr</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-1 flex justify-between">
+                        <span>Xavfli daraja: 4.0 m</span>
+                        <span id="water-status" class="text-indigo-400 font-semibold">Xavfsiz</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="bar-water" class="bg-indigo-500 h-full transition-all duration-500 rounded-full" style="width: 33%"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SECTION 2: Emergency SOS Rapid Action Panel -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-800 gap-2">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-phone-volume text-rose-500"></i>
+                        <span>Favqulodda Qutqaruv va Tezkor Aloqa (SOS)</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Xavf yuzaga kelganda bir bosish orqali favqulodda xizmatlarga qo'ng'iroq qiling</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-[11px] text-slate-500">Tezkor dispetcherlik aloqasi:</span>
+                    <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">24/7 Boshqaruvda</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- FVV Card -->
+                <div class="bg-slate-950/60 border border-slate-800 hover:border-rose-500/50 p-4 rounded-xl transition duration-200 group flex flex-col justify-between">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-rose-400 uppercase tracking-wider">Favqulodda Vaziyatlar</span>
+                            <h4 class="text-sm font-semibold text-slate-200 mt-0.5">FVV Qutqaruv Xizmati</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Shtab: 101 / Toshqin xavfi bo'limi</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:bg-rose-500 group-hover:text-white transition duration-300">
+                            <i class="fa-solid fa-truck-medical text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        <span class="text-lg font-black text-rose-400 tracking-wider">101</span>
+                        <a href="tel:101" onclick="registerCallLog('FVV (101)')" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-500/30 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-phone text-[10px]"></i>
+                            <span>Qo'ng'iroq</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Tez Yordam Card -->
+                <div class="bg-slate-950/60 border border-slate-800 hover:border-emerald-500/50 p-4 rounded-xl transition duration-200 group flex flex-col justify-between">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Tibbiy Yordam</span>
+                            <h4 class="text-sm font-semibold text-slate-200 mt-0.5">Tez Tibbiy Yordam</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Shtab: 103 / Shoshilinch brigada</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition duration-300">
+                            <i class="fa-solid fa-notes-medical text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        <span class="text-lg font-black text-emerald-400 tracking-wider">103</span>
+                        <a href="tel:103" onclick="registerCallLog('Tez Yordam (103)')" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-500/30 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-phone text-[10px]"></i>
+                            <span>Qo'ng'iroq</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- IIB Card -->
+                <div class="bg-slate-950/60 border border-slate-800 hover:border-blue-500/50 p-4 rounded-xl transition duration-200 group flex flex-col justify-between">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Jamoat Xavfsizligi</span>
+                            <h4 class="text-sm font-semibold text-slate-200 mt-0.5">Ichki Ishlar Organlari</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Shtab: 102 / Patrul navbatchiligi</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition duration-300">
+                            <i class="fa-solid fa-shield-halved text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        <span class="text-lg font-black text-blue-400 tracking-wider">102</span>
+                        <a href="tel:102" onclick="registerCallLog('IIB Militsiya (102)')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-500/30 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-phone text-[10px]"></i>
+                            <span>Qo'ng'iroq</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Kommunal Card -->
+                <div class="bg-slate-950/60 border border-slate-800 hover:border-amber-500/50 p-4 rounded-xl transition duration-200 group flex flex-col justify-between">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Suv va Drenaj</span>
+                            <h4 class="text-sm font-semibold text-slate-200 mt-0.5">Kommunal Avariya Xizmati</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Shtab: 1055 / Suv ta'minoti</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition duration-300">
+                            <i class="fa-solid fa-wrench text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        <span class="text-lg font-black text-amber-400 tracking-wider">1055</span>
+                        <a href="tel:1055" onclick="registerCallLog('Kommunal Xizmat (1055)')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-500/30 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-phone text-[10px]"></i>
+                            <span>Qo'ng'iroq</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: Actuator Controls & System Logs Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Side: Actuator Control Panel (5 Cols) -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-6">
+                <div>
+                    <!-- Section Header -->
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-sliders text-sky-400 text-base"></i>
+                            <h3 class="text-base font-bold text-white">Aktuatorlar Boshqaruvi</h3>
+                        </div>
+
+                        <!-- Manual/Auto Mode Switch -->
+                        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                            <button id="btn-mode-auto" onclick="setControlMode('auto')" class="px-3 py-1 rounded-lg font-medium transition text-sky-400 bg-slate-800 border border-slate-700">
+                                Avto
+                            </button>
+                            <button id="btn-mode-manual" onclick="setControlMode('manual')" class="px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition">
+                                Qo'lda
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Slider 1: Drainage Gate -->
+                    <div class="mt-6 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <label for="gate-range" class="font-semibold text-slate-300 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-torii-gate text-sky-400"></i>
+                                <span>Drenaj Shlyuzi Darajasi:</span>
+                            </label>
+                            <span id="gate-val-display" class="font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 text-xs">25%</span>
+                        </div>
+                        <input id="gate-range" type="range" min="0" max="100" value="25" disabled class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-not-allowed accent-sky-500 transition">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                            <span>0% (Yopiq)</span>
+                            <span>50% (Yarim)</span>
+                            <span>100% (To'liq)</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider 2: Pumps Capacity -->
+                    <div class="mt-6 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <label for="pump-range" class="font-semibold text-slate-300 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-fan text-indigo-400"></i>
+                                <span>Zaxira Suv Nasoslari Quvvati:</span>
+                            </label>
+                            <span id="pump-val-display" class="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 text-xs">0%</span>
+                        </div>
+                        <input id="pump-range" type="range" min="0" max="100" value="0" disabled class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-not-allowed accent-indigo-500 transition">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                            <span>0 (O'chiq)</span>
+                            <span>50%</span>
+                            <span>100% (Maksimal)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="space-y-2 pt-4 border-t border-slate-800">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Tezkor Harakatlar</span>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="quickOpenGates()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs font-medium py-2.5 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-angles-up text-sky-400"></i>
+                            <span>Shlyuz 100%</span>
+                        </button>
+
+                        <button onclick="quickStartPumps()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs font-medium py-2.5 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-bolt text-amber-400"></i>
+                            <span>Nasoslarni Yoqish</span>
+                        </button>
+                    </div>
+
+                    <button onclick="resetToNormalMode()" class="w-full bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 text-xs font-medium py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 mt-2">
+                        <i class="fa-solid fa-rotate-left text-xs"></i>
+                        <span>Tizimni Boshlang'ich Holatga Qaytarish</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side: Real-time System Activity Logs (7 Cols) -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                
+                <!-- Log Console Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-terminal text-emerald-400 text-base"></i>
+                        <h3 class="text-base font-bold text-white">Tizim Voqealar Jurnali va SI Qarorlari</h3>
+                    </div>
+                    
+                    <!-- Log Actions -->
+                    <div class="flex items-center space-x-2">
+                        <button onclick="clearLogs()" title="Loglarni Tozalash" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 p-1.5 rounded-lg border border-slate-700 transition text-xs">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        <button onclick="exportLogs()" title="Hisobotni yuklab olish" class="bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 px-2.5 py-1 rounded-lg border border-sky-500/30 transition text-xs font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-download text-[10px]"></i>
+                            <span>Yuklash</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log Display Terminal Box -->
+                <div id="log-container" class="bg-slate-950 rounded-xl p-4 h-72 overflow-y-auto font-mono text-xs space-y-2 border border-slate-800/80 shadow-inner">
+                    <!-- Logs injected via JS dynamically -->
+                </div>
+
+                <!-- Footer Summary inside Log Card -->
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Avto-kuzatuv faol</span>
+                    </div>
+                    <div>Jamlangan xabarlar: <span id="log-count" class="font-bold text-slate-400">0</span> ta</div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Simple Modern Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center sm:flex sm:justify-between sm:items-center text-xs text-slate-500">
+            <div>
+                &copy; 2026 HydroAI Pro. Barcha huquqlar himoyalangan.
+            </div>
+            <div class="mt-2 sm:mt-0 flex justify-center space-x-4">
+                <span class="hover:text-slate-400 transition cursor-pointer">Maxfiylik Siyosati</span>
+                <span>•</span>
+                <span class="hover:text-slate-400 transition cursor-pointer">Tizim Qo'llanmasi</span>
+                <span>•</span>
+                <span class="hover:text-slate-400 transition cursor-pointer">Qutqaruv Shtabi</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tizim Asosiy Holati (State Management)
+        const state = {
+            isEmergency: false,
+            simulationActive: true,
+            controlMode: 'auto', // 'auto' or 'manual'
+            rainIntensity: 14.2, // mm/h
+            soilMoisture: 48,    // %
+            waterLevel: 1.65,    // meters
+            gatePosition: 25,    // %
+            pumpPower: 0,        // %
+            logCount: 0
+        };
+
+        // DOM Elementlari
+        const elements = {
+            liveClock: document.getElementById('live-clock'),
+            aiRiskTitle: document.getElementById('ai-risk-title'),
+            aiRiskDesc: document.getElementById('ai-risk-desc'),
+            aiRiskCard: document.getElementById('ai-risk-card'),
+            riskDot: document.getElementById('risk-dot'),
+            riskProbability: document.getElementById('risk-probability'),
+            
+            valRain: document.getElementById('val-rain'),
+            barRain: document.getElementById('bar-rain'),
+            rainStatus: document.getElementById('rain-status'),
+
+            valSoil: document.getElementById('val-soil'),
+            barSoil: document.getElementById('bar-soil'),
+            soilStatus: document.getElementById('soil-status'),
+
+            valWater: document.getElementById('val-water'),
+            barWater: document.getElementById('bar-water'),
+            waterStatus: document.getElementById('water-status'),
+
+            gateRange: document.getElementById('gate-range'),
+            gateValDisplay: document.getElementById('gate-val-display'),
+
+            pumpRange: document.getElementById('pump-range'),
+            pumpValDisplay: document.getElementById('pump-val-display'),
+
+            logContainer: document.getElementById('log-container'),
+            logCount: document.getElementById('log-count'),
+            emergencyBanner: document.getElementById('emergency-banner'),
+            mainHeader: document.getElementById('main-header'),
+
+            btnModeAuto: document.getElementById('btn-mode-auto'),
+            btnModeManual: document.getElementById('btn-mode-manual'),
+            modeBadgeDisplay: document.getElementById('mode-badge-display'),
+            simToggleBtn: document.getElementById('sim-toggle-btn'),
+            simBtnText: document.getElementById('sim-btn-text')
+        };
+
+        // Real Vaqt Soati
+        function updateClock() {
+            const now = new Date();
+            elements.liveClock.innerText = now.toLocaleTimeString('uz-UZ', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // System Log Manager
+        function addLog(message, type = 'info') {
+            state.logCount++;
+            elements.logCount.innerText = state.logCount;
+
+            const timeStr = new Date().toLocaleTimeString('uz-UZ', { hour12: false });
+            const logEntry = document.createElement('div');
+            
+            let colorClasses = 'text-slate-300';
+            let prefixIcon = '<i class="fa-solid fa-angle-right text-slate-500 mr-1.5"></i>';
+
+            if (type === 'danger') {
+                colorClasses = 'text-rose-400 font-semibold bg-rose-500/10 p-1.5 rounded border border-rose-500/20';
+                prefixIcon = '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1.5"></i>';
+            } else if (type === 'warning') {
+                colorClasses = 'text-amber-400 bg-amber-500/10 p-1.5 rounded border border-amber-500/20';
+                prefixIcon = '<i class="fa-solid fa-circle-exclamation text-amber-400 mr-1.5"></i>';
+            } else if (type === 'success') {
+                colorClasses = 'text-emerald-400';
+                prefixIcon = '<i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>';
+            } else if (type === 'action') {
+                colorClasses = 'text-sky-300 font-mono';
+                prefixIcon = '<i class="fa-solid fa-gear text-sky-400 mr-1.5"></i>';
+            }
+
+            logEntry.className = `leading-relaxed text-[11px] ${colorClasses}`;
+            logEntry.innerHTML = `<span class="text-slate-500 font-mono">[${timeStr}]</span> ${prefixIcon}${message}`;
+
+            elements.logContainer.appendChild(logEntry);
+            elements.logContainer.scrollTop = elements.logContainer.scrollHeight;
+        }
+
+        function clearLogs() {
+            elements.logContainer.innerHTML = '';
+            state.logCount = 0;
+            elements.logCount.innerText = '0';
+            addLog("Tizim loglari tozalandi.", "info");
+        }
+
+        function exportLogs() {
+            const textContent = Array.from(elements.logContainer.children)
+                .map(el => el.innerText)
+                .join('\n');
+            
+            if (!textContent) {
+                alert("Yuklab olish uchun loglar mavjud emas!");
+                return;
+            }
+
+            const element = document.createElement('a');
+            const file = new Blob([textContent], {type: 'text/plain'});
+            element.href = URL.createObjectURL(file);
+            element.download = `HydroAI_Logs_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+
+            addLog("Tizim loglari matn fayli shaklida yuklab olindi.", "success");
+        }
+
+        // Mode Switching: Auto vs Manual
+        function setControlMode(mode) {
+            state.controlMode = mode;
+            if (mode === 'manual') {
+                elements.btnModeManual.className = "px-3 py-1 rounded-lg font-medium transition text-sky-400 bg-slate-800 border border-slate-700";
+                elements.btnModeAuto.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition";
+                elements.modeBadgeDisplay.innerText = "Qo'lda boshqaruv";
+                elements.modeBadgeDisplay.className = "font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20";
+                
+                elements.gateRange.disabled = false;
+                elements.pumpRange.disabled = false;
+                elements.gateRange.classList.remove('cursor-not-allowed');
+                elements.pumpRange.classList.remove('cursor-not-allowed');
+
+                addLog("Boshqaruv rejimi QO'LDA rejimiga o'tkazildi. Slayderlar faollashtirildi.", "warning");
+            } else {
+                elements.btnModeAuto.className = "px-3 py-1 rounded-lg font-medium transition text-sky-400 bg-slate-800 border border-slate-700";
+                elements.btnModeManual.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition";
+                elements.modeBadgeDisplay.innerText = "Avto-boshqaruv";
+                elements.modeBadgeDisplay.className = "font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20";
+                
+                elements.gateRange.disabled = true;
+                elements.pumpRange.disabled = true;
+                elements.gateRange.classList.add('cursor-not-allowed');
+                elements.pumpRange.classList.add('cursor-not-allowed');
+
+                addLog("Boshqaruv rejimi AVTOMATIK (SI Nazorati) rejimiga o'tkazildi.", "action");
+                evaluateAI();
+            }
+        }
+
+        // Sliders Input Handling
+        elements.gateRange.addEventListener('input', (e) => {
+            state.gatePosition = e.target.value;
+            elements.gateValDisplay.innerText = state.gatePosition + '%';
+        });
+
+        elements.gateRange.addEventListener('change', (e) => {
+            addLog(`Qo'lda buyruq: Drenaj shlyuzi ${e.target.value}% ga o'zgartirildi.`, "action");
+        });
+
+        elements.pumpRange.addEventListener('input', (e) => {
+            state.pumpPower = e.target.value;
+            elements.pumpValDisplay.innerText = state.pumpPower + '%';
+        });
+
+        elements.pumpRange.addEventListener('change', (e) => {
+            addLog(`Qo'lda buyruq: Zaxira nasoslar quvvati ${e.target.value}% ga o'zgartirildi.`, "action");
+        });
+
+        // Quick Actions
+        function quickOpenGates() {
+            setControlMode('manual');
+            state.gatePosition = 100;
+            elements.gateRange.value = 100;
+            elements.gateValDisplay.innerText = '100%';
+            addLog("Tezkor buyruq bajarildi: Drenaj shlyuzlari 100% ochildi.", "action");
+        }
+
+        function quickStartPumps() {
+            setControlMode('manual');
+            state.pumpPower = 100;
+            elements.pumpRange.value = 100;
+            elements.pumpValDisplay.innerText = '100%';
+            addLog("Tezkor buyruq bajarildi: Zaxira nasoslar maksimal quvvatda (100%) ishga tushirildi.", "action");
+        }
+
+        function registerCallLog(serviceName) {
+            addLog(`TEZKOR ALOQA: ${serviceName} raqamiga favqulodda qo'ng'iroq amalga oshirildi.`, "danger");
+        }
+
+        // Simulation Control
+        function toggleSimulation() {
+            state.simulationActive = !state.simulationActive;
+            if (state.simulationActive) {
+                elements.simBtnText.innerText = "Simulyatsiya: Faol";
+                addLog("Sensorlar simulyatsiyasi qayta yoqildi.", "info");
+            } else {
+                elements.simBtnText.innerText = "Simulyatsiya: To'xtatildi";
+                addLog("Sensorlar simulyatsiyasi vaqtincha to'xtatildi.", "warning");
+            }
+        }
+
+        // AI Engine & Evaluation Logic
+        function evaluateAI() {
+            if (state.isEmergency) return; // Keep emergency priority
+
+            const rain = state.rainIntensity;
+            const soil = state.soilMoisture;
+            const water = state.waterLevel;
+
+            // Simple SI Logic matrix
+            let riskLevel = 'XAVFSIZ';
+            let riskProb = Math.min(99, Math.round((rain / 80 + soil / 100 + water / 4.5) * 20));
+
+            if (rain > 50 || water > 3.2 || (rain > 35 && soil > 80)) {
+                riskLevel = 'FAVQULODDA';
+            } else if (rain > 25 || water > 2.2 || soil > 75) {
+                riskLevel = 'DIQQAT';
+            }
+
+            elements.riskProbability.innerText = riskProb + '%';
+
+            if (riskLevel === 'FAVQULODDA') {
+                triggerEmergencyMode();
+            } else if (riskLevel === 'DIQQAT') {
+                elements.aiRiskTitle.innerText = "DIQQAT";
+                elements.aiRiskTitle.className = "text-2xl font-black text-amber-400 tracking-tight transition-colors";
+                elements.aiRiskDesc.innerText = "Yog'ingarchilik yuqori. Toshqin ehtimoli oshmoqda.";
+                elements.riskDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                elements.aiRiskCard.className = "bg-slate-900 border border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 shadow-lg shadow-amber-950/20";
+
+                if (state.controlMode === 'auto') {
+                    state.gatePosition = 60;
+                    state.pumpPower = 40;
+                    elements.gateRange.value = 60;
+                    elements.gateValDisplay.innerText = '60%';
+                    elements.pumpRange.value = 40;
+                    elements.pumpValDisplay.innerText = '40%';
+                    addLog("SI Qarori (DIQQAT): Shlyuzlar 60% ga ochildi, Nasoslar 40% ga yoqildi.", "warning");
+                }
+            } else {
+                elements.aiRiskTitle.innerText = "XAVFSIZ";
+                elements.aiRiskTitle.className = "text-2xl font-black text-emerald-400 tracking-tight transition-colors";
+                elements.aiRiskDesc.innerText = "Yog'ingarchilik va suv sathi me'yorida.";
+                elements.riskDot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                elements.aiRiskCard.className = "bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 shadow-sm";
+
+                if (state.controlMode === 'auto') {
+                    state.gatePosition = Math.min(30, Math.round(rain));
+                    state.pumpPower = 0;
+                    elements.gateRange.value = state.gatePosition;
+                    elements.gateValDisplay.innerText = state.gatePosition + '%';
+                    elements.pumpRange.value = 0;
+                    elements.pumpValDisplay.innerText = '0%';
+                }
+            }
+        }
+
+        // Emergency Control Mode Trigger
+        function triggerEmergencyMode() {
+            state.isEmergency = true;
+            
+            // UI Updates
+            elements.emergencyBanner.classList.remove('hidden');
+            elements.mainHeader.classList.add('siren-active');
+
+            elements.aiRiskTitle.innerText = "FAVQULODDA XAVF";
+            elements.aiRiskTitle.className = "text-2xl font-black text-rose-500 tracking-tight animate-bounce";
+            elements.aiRiskDesc.innerText = "Toshqin xavfi o'ta yuqori! Barcha qutqaruv va drenaj tizimlari ishga tushirildi.";
+            elements.riskProbability.innerText = "98%";
+            elements.riskDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+            elements.aiRiskCard.className = "bg-slate-900 border border-rose-500/60 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 shadow-xl shadow-rose-950/50";
+
+            // Sensor spikes
+            state.rainIntensity = 78.5;
+            state.soilMoisture = 94;
+            state.waterLevel = 4.25;
+
+            updateSensorUI();
+
+            // Actuator Max Out
+            state.gatePosition = 100;
+            state.pumpPower = 100;
+            elements.gateRange.value = 100;
+            elements.gateValDisplay.innerText = '100%';
+            elements.pumpRange.value = 100;
+            elements.pumpValDisplay.innerText = '100%';
+
+            addLog("FAVQULODDA OGOHLANTIRISH: Tizimda toshqin xavfi aniqlandi!", "danger");
+            addLog("SI TIZIMI BUYRUG'I: Drenaj shlyuzlari 100% ochildi va zaxira nasoslar to'liq yoqildi.", "danger");
+            addLog("FVV (101) va Shoshilinch Xizmatlarga avtomatik signal yuborildi.", "danger");
+        }
+
+        // Reset system to normal baseline
+        function resetToNormalMode() {
+            state.isEmergency = false;
+            
+            elements.emergencyBanner.classList.add('hidden');
+            elements.mainHeader.classList.remove('siren-active');
+
+            state.rainIntensity = 12.0;
+            state.soilMoisture = 45;
+            state.waterLevel = 1.50;
+
+            updateSensorUI();
+            setControlMode('auto');
+
+            addLog("Tizim favqulodda rejimdan chiqarildi va standart holatga qaytarildi.", "success");
+        }
+
+        // Sensor UI Renderer
+        function updateSensorUI() {
+            elements.valRain.innerText = state.rainIntensity.toFixed(1);
+            elements.barRain.style.width = Math.min(100, (state.rainIntensity / 80) * 100) + '%';
+            if (state.rainIntensity > 50) {
+                elements.rainStatus.innerText = "Juda kuchli";
+                elements.rainStatus.className = "text-rose-400 font-semibold";
+                elements.barRain.className = "bg-rose-500 h-full transition-all duration-500 rounded-full";
+            } else if (state.rainIntensity > 25) {
+                elements.rainStatus.innerText = "O'rtacha kuchli";
+                elements.rainStatus.className = "text-amber-400 font-semibold";
+                elements.barRain.className = "bg-amber-500 h-full transition-all duration-500 rounded-full";
+            } else {
+                elements.rainStatus.innerText = "Me'yorida";
+                elements.rainStatus.className = "text-emerald-400 font-semibold";
+                elements.barRain.className = "bg-sky-500 h-full transition-all duration-500 rounded-full";
+            }
+
+            elements.valSoil.innerText = Math.round(state.soilMoisture);
+            elements.barSoil.style.width = state.soilMoisture + '%';
+            if (state.soilMoisture > 85) {
+                elements.soilStatus.innerText = "O'ta yuqori";
+                elements.soilStatus.className = "text-rose-400 font-semibold";
+            } else {
+                elements.soilStatus.innerText = "Mo'tadil";
+                elements.soilStatus.className = "text-cyan-400 font-semibold";
+            }
+
+            elements.valWater.innerText = state.waterLevel.toFixed(2);
+            elements.barWater.style.width = Math.min(100, (state.waterLevel / 4.5) * 100) + '%';
+            if (state.waterLevel > 3.5) {
+                elements.waterStatus.innerText = "Kritik";
+                elements.waterStatus.className = "text-rose-400 font-semibold";
+                elements.barWater.className = "bg-rose-500 h-full transition-all duration-500 rounded-full";
+            } else {
+                elements.waterStatus.innerText = "Xavfsiz";
+                elements.waterStatus.className = "text-indigo-400 font-semibold";
+                elements.barWater.className = "bg-indigo-500 h-full transition-all duration-500 rounded-full";
+            }
+        }
+
+        // Live Dynamic Data Simulation Interval
+        setInterval(() => {
+            if (!state.simulationActive || state.isEmergency) return;
+
+            // Small natural fluctuations
+            const rainDelta = (Math.random() - 0.48) * 1.5;
+            const waterDelta = (Math.random() - 0.49) * 0.05;
+            const soilDelta = (Math.random() - 0.48) * 0.5;
+
+            state.rainIntensity = Math.max(0, Math.min(90, state.rainIntensity + rainDelta));
+            state.waterLevel = Math.max(0.5, Math.min(5.0, state.waterLevel + waterDelta));
+            state.soilMoisture = Math.max(10, Math.min(100, state.soilMoisture + soilDelta));
+
+            updateSensorUI();
+            evaluateAI();
+
+        }, 3000);
+
+        // Initial Initialization
+        window.addEventListener('load', () => {
+            addLog("HydroAI Pro tizimi muvaffaqiyatli ishga tushirildi.", "success");
+            addLog("Sensorlar va SI tahlil moduli faollashtirildi.", "info");
+            updateSensorUI();
+            evaluateAI();
+        });
+    </script>
+</body>
+</html>
