@@ -1,0 +1,2 @@
+# ai-kurs
+ai- projects
