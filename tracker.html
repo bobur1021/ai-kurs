@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Hydration & Fitness Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #090D16;
+    --bg2: #0F172A;
+    --cyan: #22e6f0;
+    --cyan-dim: rgba(34,230,240,0.18);
+    --emerald: #34e0a1;
+    --purple: #a78bfa;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(34,230,240,0.10), transparent 60%),
+      radial-gradient(ellipse 900px 600px at 100% 10%, rgba(167,139,250,0.10), transparent 55%),
+      var(--bg);
+    color:#e7ecf5;
+    font-family:'Manrope', sans-serif;
+    min-height:100%;
+  }
+  h1,h2,h3,.font-display{ font-family:'Sora', sans-serif; }
+
+  .glass{
+    background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .glass-strong{
+    background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+    border: 1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .btn-quick{
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  }
+  .btn-quick:active{ transform: scale(0.94); }
+  .btn-quick:hover{ box-shadow: 0 0 0 1px rgba(34,230,240,0.35), 0 8px 24px -8px rgba(34,230,240,0.35); }
+
+  .btn-reset:hover{ box-shadow: 0 0 0 1px rgba(255,255,255,0.18); }
+
+  .ring-glow{ filter: drop-shadow(0 0 10px rgba(34,230,240,0.55)); }
+
+  .pulse-once{ animation: pulseOnce 0.5s ease; }
+  @keyframes pulseOnce{
+    0%{ transform: scale(1); }
+    35%{ transform: scale(1.045); }
+    100%{ transform: scale(1); }
+  }
+
+  .fade-in-up{ animation: fadeInUp 0.35s ease both; }
+  @keyframes fadeInUp{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .workout-chip{
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  }
+  .workout-chip:active{ transform: scale(0.96); }
+  .workout-chip.selected{
+    background: rgba(167,139,250,0.16);
+    border-color: rgba(167,139,250,0.55);
+  }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:8px; }
+
+  input[type="number"]::-webkit-inner-spin-button{ opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-5xl mx-auto px-5 py-10 md:py-14">
+
+  <!-- Header -->
+  <header class="mb-10 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400 mb-1">Today's balance</p>
+      <h1 class="font-display text-2xl md:text-3xl font-bold text-white">Hydration & Fitness</h1>
+    </div>
+    <div class="glass rounded-2xl px-4 py-2.5 text-right">
+      <p class="text-[11px] text-slate-400" id="today-date">—</p>
+      <p class="text-sm font-semibold text-slate-100" id="today-time">—</p>
+    </div>
+  </header>
+
+  <!-- Main grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- Water Tracker Card -->
+    <section class="lg:col-span-2 glass-strong rounded-3xl p-7 flex flex-col items-center">
+      <div class="w-full flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-semibold text-white">Water Intake</h2>
+        <span class="text-[11px] px-2.5 py-1 rounded-full bg-cyan-400/10 text-cyan-300 border border-cyan-400/20">ml</span>
+      </div>
+
+      <div class="relative w-56 h-56 my-3" id="ring-wrap">
+        <svg viewBox="0 0 200 200" class="w-full h-full -rotate-90 ring-glow">
+          <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>
+          <circle id="water-ring" cx="100" cy="100" r="86" fill="none" stroke="url(#waterGradient)"
+                  stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="540.35" stroke-dashoffset="540.35"
+                  style="transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1);"/>
+          <defs>
+            <linearGradient id="waterGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#22e6f0"/>
+              <stop offset="100%" stop-color="#3ad6ff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="font-display text-4xl font-extrabold text-white" id="water-percent">0%</span>
+          <span class="text-sm text-slate-400 mt-1"><span id="water-current">0</span> / <span id="water-target">2500</span> ml</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 w-full mt-5">
+        <button class="btn-quick glass rounded-2xl py-3.5 font-semibold text-cyan-300 text-sm border-cyan-400/20"
+                onclick="addWater(250)">+ 250 ml</button>
+        <button class="btn-quick glass rounded-2xl py-3.5 font-semibold text-cyan-300 text-sm border-cyan-400/20"
+                onclick="addWater(500)">+ 500 ml</button>
+      </div>
+
+      <div class="flex items-center gap-2 w-full mt-3">
+        <input id="custom-water" type="number" min="1" placeholder="Custom ml"
+               class="flex-1 glass rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-400/40" />
+        <button class="btn-quick glass rounded-xl px-4 py-2.5 text-sm font-semibold text-cyan-300"
+                onclick="addCustomWater()">Add</button>
+      </div>
+
+      <button class="btn-reset w-full mt-3 rounded-xl py-2.5 text-xs font-medium text-slate-400 border border-white/10 hover:text-slate-200 transition"
+              onclick="resetWater()">Reset for today</button>
+
+      <div class="w-full mt-5 pt-5 border-t border-white/8">
+        <label class="text-xs text-slate-400 mb-2 block">Daily target</label>
+        <div class="flex items-center gap-2">
+          <input id="target-input" type="range" min="1000" max="5000" step="100" value="2500"
+                 class="flex-1 accent-cyan-400" oninput="updateTarget(this.value)">
+          <span class="text-sm font-semibold text-cyan-300 w-16 text-right" id="target-display">2500 ml</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right column: Workout + Motivation -->
+    <section class="lg:col-span-3 flex flex-col gap-6">
+
+      <!-- Workout Logger -->
+      <div class="glass-strong rounded-3xl p-7">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-display text-lg font-semibold text-white">Workout Logger</h2>
+          <div class="text-right">
+            <p class="text-[11px] text-slate-400">Total active time</p>
+            <p class="font-display text-lg font-bold text-emerald-300" id="total-time">0 min</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4" id="activity-chips">
+          <button class="workout-chip selected glass rounded-full px-4 py-2 text-sm text-slate-200 border border-white/10" data-activity="Swimming">🏊 Swimming</button>
+          <button class="workout-chip glass rounded-full px-4 py-2 text-sm text-slate-200 border border-white/10" data-activity="Judo">🥋 Judo</button>
+          <button class="workout-chip glass rounded-full px-4 py-2 text-sm text-slate-200 border border-white/10" data-activity="Gym">🏋️ Gym</button>
+          <button class="workout-chip glass rounded-full px-4 py-2 text-sm text-slate-200 border border-white/10" data-activity="Running">🏃 Running</button>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input id="duration-input" type="number" min="1" placeholder="Duration (min)"
+                 class="flex-1 glass rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-purple-400/40" />
+          <button class="btn-quick rounded-xl px-5 py-3 text-sm font-semibold text-slate-900 bg-gradient-to-r from-emerald-400 to-purple-400"
+                  onclick="logWorkout()">Log Activity</button>
+        </div>
+
+        <div class="mt-5">
+          <p class="text-xs text-slate-500 mb-2" id="workout-empty-label">No activities logged yet today</p>
+          <ul id="workout-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1"></ul>
+        </div>
+      </div>
+
+      <!-- Motivation Card -->
+      <div class="glass-strong rounded-3xl p-7 relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-purple-400/10 blur-3xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-cyan-400/10 blur-3xl"></div>
+        <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 mb-3">Daily Motivation</p>
+        <p class="font-display text-xl md:text-2xl font-semibold text-white leading-snug mb-3" id="quote-text">
+          Discipline is choosing between what you want now and what you want most.
+        </p>
+        <p class="text-sm text-slate-400" id="quote-author">— Abraham Lincoln</p>
+        <button class="btn-quick mt-4 text-xs font-medium text-slate-300 glass rounded-full px-4 py-2 border border-white/10"
+                onclick="newQuote()">New quote ↻</button>
+      </div>
+
+    </section>
+  </div>
+
+</div>
+
+<script>
+  // ---------- State ----------
+  let waterTarget = 2500;
+  let waterCurrent = 0;
+  let workouts = []; // {activity, duration, time}
+  let selectedActivity = 'Swimming';
+
+  const RING_CIRC = 540.35; // 2 * PI * 86
+
+  const quotes = [
+    { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+    { text: "The body achieves what the mind believes.", author: "Napoleon Hill" },
+    { text: "Take care of your body. It's the only place you have to live.", author: "Jim Rohn" },
+    { text: "Motivation gets you going, but discipline keeps you growing.", author: "John C. Maxwell" },
+    { text: "Small daily improvements are the key to staggering long-term results.", author: "Unknown" },
+    { text: "Water is the driving force of all nature.", author: "Leonardo da Vinci" },
+    { text: "Energy and persistence conquer all things.", author: "Benjamin Franklin" },
+    { text: "The only bad workout is the one that didn't happen.", author: "Unknown" }
+  ];
+
+  // ---------- Init ----------
+  function updateDateTime(){
+    const now = new Date();
+    document.getElementById('today-date').textContent = now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' });
+    document.getElementById('today-time').textContent = now.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+  }
+  updateDateTime();
+  setInterval(updateDateTime, 30000);
+
+  function pickRandomQuote(){
+    const q = quotes[Math.floor(Math.random()*quotes.length)];
+    document.getElementById('quote-text').textContent = q.text;
+    document.getElementById('quote-author').textContent = '— ' + q.author;
+  }
+  function newQuote(){
+    const card = document.getElementById('quote-text').closest('div');
+    pickRandomQuote();
+  }
+  pickRandomQuote();
+
+  // ---------- Water logic ----------
+  function renderWater(animate){
+    const pct = Math.max(0, Math.min(1, waterCurrent / waterTarget));
+    const offset = RING_CIRC * (1 - pct);
+    const ring = document.getElementById('water-ring');
+    ring.style.strokeDashoffset = offset;
+    document.getElementById('water-percent').textContent = Math.round(pct*100) + '%';
+    document.getElementById('water-current').textContent = waterCurrent;
+    document.getElementById('water-target').textContent = waterTarget;
+
+    if(animate){
+      const wrap = document.getElementById('ring-wrap');
+      wrap.classList.remove('pulse-once');
+      void wrap.offsetWidth;
+      wrap.classList.add('pulse-once');
+    }
+  }
+
+  function addWater(amount){
+    waterCurrent += amount;
+    renderWater(true);
+  }
+
+  function addCustomWater(){
+    const input = document.getElementById('custom-water');
+    const val = parseInt(input.value, 10);
+    if(!val || val <= 0) return;
+    waterCurrent += val;
+    input.value = '';
+    renderWater(true);
+  }
+
+  function resetWater(){
+    waterCurrent = 0;
+    renderWater(true);
+  }
+
+  function updateTarget(val){
+    waterTarget = parseInt(val, 10);
+    document.getElementById('target-display').textContent = waterTarget + ' ml';
+    renderWater(false);
+  }
+
+  renderWater(false);
+
+  // ---------- Workout logic ----------
+  document.querySelectorAll('.workout-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.workout-chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedActivity = chip.getAttribute('data-activity');
+    });
+  });
+
+  const activityIcons = { Swimming:'🏊', Judo:'🥋', Gym:'🏋️', Running:'🏃' };
+
+  function renderTotalTime(){
+    const total = workouts.reduce((sum,w)=> sum + w.duration, 0);
+    document.getElementById('total-time').textContent = total + ' min';
+  }
+
+  function renderWorkoutList(){
+    const list = document.getElementById('workout-list');
+    const emptyLabel = document.getElementById('workout-empty-label');
+    list.innerHTML = '';
+    if(workouts.length === 0){
+      emptyLabel.style.display = 'block';
+      return;
+    }
+    emptyLabel.style.display = 'none';
+    [...workouts].reverse().forEach(w=>{
+      const li = document.createElement('li');
+      li.className = 'fade-in-up flex items-center justify-between glass rounded-xl px-4 py-3';
+      li.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-xl">${activityIcons[w.activity] || '💪'}</span>
+          <div>
+            <p class="text-sm font-semibold text-slate-100">${w.activity}</p>
+            <p class="text-[11px] text-slate-500">${w.time}</p>
+          </div>
+        </div>
+        <span class="text-sm font-semibold text-purple-300">${w.duration} min</span>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  function logWorkout(){
+    const durInput = document.getElementById('duration-input');
+    const duration = parseInt(durInput.value, 10);
+    if(!duration || duration <= 0) return;
+    const now = new Date();
+    workouts.push({
+      activity: selectedActivity,
+      duration: duration,
+      time: now.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' })
+    });
+    durInput.value = '';
+    renderWorkoutList();
+    renderTotalTime();
+  }
+
+  renderWorkoutList();
+  renderTotalTime();
+
+  // Enter key support
+  document.getElementById('custom-water').addEventListener('keydown', e=>{ if(e.key==='Enter') addCustomWater(); });
+  document.getElementById('duration-input').addEventListener('keydown', e=>{ if(e.key==='Enter') logWorkout(); });
+</script>
+</body>
+</html>
